@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SYSTEM ACCESS</title>
+<style>
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    min-height: 100%;
+    background: #000;
+  }
+
+  body {
+    font-family: 'Courier New', Courier, monospace;
+    color: #00ff41;
+    padding: 6vh 6vw;
+    line-height: 1.5;
+    font-size: 1.05rem;
+    text-shadow: 0 0 4px rgba(0, 255, 65, 0.5);
+  }
+
+  #terminal {
+    max-width: 760px;
+    margin: 0 auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  #log {
+    white-space: pre-wrap;
+  }
+
+  .line {
+    display: block;
+  }
+
+  .prompt-row {
+    display: flex;
+    align-items: baseline;
+  }
+
+  .prompt-row .prefix {
+    white-space: pre;
+  }
+
+  #codeInput {
+    background: transparent;
+    border: none;
+    outline: none;
+    color: #00ff41;
+    font-family: inherit;
+    font-size: inherit;
+    text-shadow: 0 0 4px rgba(0, 255, 65, 0.5);
+    caret-color: #00ff41;
+    width: 100%;
+  }
+
+  #codeInput::placeholder {
+    color: rgba(0, 255, 65, 0.25);
+  }
+
+  .cursor {
+    display: inline-block;
+    width: 0.6em;
+    background: #00ff41;
+    animation: blink 1s steps(1) infinite;
+    margin-left: 2px;
+  }
+
+  @keyframes blink {
+    50% { opacity: 0; }
+  }
+
+  .denied {
+    color: #ff3b3b;
+    text-shadow: 0 0 6px rgba(255, 59, 59, 0.6);
+  }
+
+  .hidden { display: none; }
+
+  #message {
+    margin-top: 1.5em;
+    border-top: 1px dashed rgba(0, 255, 65, 0.3);
+    padding-top: 1.2em;
+  }
+
+  .signal-flash {
+    display: block;
+    color: #ff3b3b;
+    opacity: 0;
+    text-shadow: 0 0 6px rgba(255, 59, 59, 0.6);
+    margin-bottom: 0.4em;
+    transition: opacity 0.08s linear;
+  }
+
+  .signal-flash.on { opacity: 1; }
+
+  .trigger-line {
+    cursor: pointer;
+  }
+
+  .trigger-line.clickable:hover {
+    text-shadow: 0 0 10px rgba(0, 255, 65, 0.9);
+    text-decoration: underline dashed rgba(0, 255, 65, 0.5);
+  }
+
+  .trigger-line.activated {
+    cursor: default;
+    color: rgba(0, 255, 65, 0.6);
+    text-decoration: none;
+  }
+
+  .extra-message {
+    display: block;
+    margin-top: 1.2em;
+    padding-top: 1.2em;
+    border-top: 1px dashed rgba(0, 255, 65, 0.3);
+  }
+
+  .cipher-part {
+    color: #ff00ff;
+    text-shadow: 0 0 8px rgba(255, 0, 255, 0.6);
+  }
+
+  .loading-anim {
+    display: inline;
+    color: #00ff41;
+  }
+
+  @keyframes dotPulse {
+    0%, 100% { opacity: 0; }
+    50% { opacity: 1; }
+  }
+
+  .loading-anim .dot {
+    display: inline;
+    animation: dotPulse 0.5s ease-in-out infinite;
+  }
+
+  .loading-anim .dot:nth-child(1) { animation-delay: 0s; }
+  .loading-anim .dot:nth-child(2) { animation-delay: 0.15s; }
+  .loading-anim .dot:nth-child(3) { animation-delay: 0.3s; }
+
+  .prompt-button {
+    cursor: pointer;
+    color: #00ff41;
+    text-decoration: underline dashed rgba(0, 255, 65, 0.5);
+  }
+
+  .prompt-button:hover {
+    text-shadow: 0 0 10px rgba(0, 255, 65, 0.9);
+    text-decoration: underline;
+  }
+
+  .prompt-button.activated {
+    cursor: default;
+    color: rgba(0, 255, 65, 0.6);
+    text-decoration: none;
+  }
+
+  ::selection {
+    background: #00ff41;
+    color: #000;
+  }
+</style>
+</head>
+<body>
+  <div id="terminal">
+    <div id="log"></div>
+
+    <div class="prompt-row" id="inputRow">
+      <span class="prefix">DIGITE O CÓDIGO DE ACESSO&gt; </span>
+      <input id="codeInput" type="text" autocomplete="off" autocapitalize="off"
+             spellcheck="false" maxlength="20" autofocus>
+      <span class="cursor"></span>
+    </div>
+
+    <div id="message" class="hidden"></div>
+  </div>
+
+  <script>
+    const PASSCODE = "69918090";
+
+    const log = document.getElementById('log');
+    const inputRow = document.getElementById('inputRow');
+    const input = document.getElementById('codeInput');
+    const messageBox = document.getElementById('message');
+
+    const MESSAGE = `G.A.P.T - Âncora IV
+Terminal de Acesso Público 29-g<96.09.08.30>
+
+…
+
+<Transferência de conteúdo de Âncora IV para rede local Host {26.27.06.11}>
+
+…
+
+<Erro de transferência desconhecido>
+
+...
+
+<Transferência para rede local>
+
+…
+
+<Erro de transferência desconhecido>
+
+...
+
+<Erro interno de transferência>
+
+...
+
+<Transferência para Host {26.27.06.11} parcialmente realizada>
+
+…
+
+***MENSAGEM RECEBIDA***
+
+
+{%%%{{!!{{ra ele levitava mais acima, suas mãos tremendo. Flutuou
+pelas barras, esperando a segur{{{{[[@!!#!5uem que suas mãos encontrariam
+suporte, mas o momento nunca veio. As barras apertavam seu corpo.
+
+Enquanto descendia pela cela, a determinação em sua feição se tornava brisa fria. Piscou lágrim{{{{{{{{@@@!@!%
+
+4 13 10 18 22 6   |  15 2
+
+Tombava pelas barras. Girando e rolando, viu um homem. Em suas mãos, segurava um rato branco. O estrondo, quebrar das ondas em seus ouvidos era rítmico, rude. O homem batia o rato contra o piso. Batia e batia. Sangue cobria suas mãos, quebradas pelo solo da sua clausura. Amante, opressor, assassino. 
+
+17 2 13 2 23 19 2   |  16 15 5 2 20
+
+Olhou para a cela, viu a si mesmo. Amante, opressor, assassino. 
+
+Havia matado seu nêmesis, o rato inerte em suas mãos. 
+
+Finalmente, agarrava seu agressor pela garganta
+
+e escapava pelas ondas.
+
+
+
+
+As ondas.
+
+
+***FIM DA MENSAGEM***
+
+<Réplica desabilitada>
+<Aceitar nova mensagem>
+
+G.A.P.T - Âncora IV
+Terminal de Acesso Público 29-g<96.08.09.30>`;
+
+    const EXTRA_MESSAGE = `Khepri’Ra, que tomamos, entre Y’loa e T’jia, todos em uma única fila. Troque Khepri’Ra com o igapó e ocupe o espaço para ser a m{{{arc\`´´arque o tempo do nosso êxodo a cada 119.086 rotações. Procure as ondulações que nos formaram, um quarto do caminho até o sol, ao redor do igapó. Quando um for todos, Eidolon despertará.`;
+
+    const EXTRA_EXTRA_MESSAGE = `G.A.P.T - Âncora I
+Terminal de Acesso Privado 01-g<11.11.11.01>
+
+…
+
+<Transferência de Âncora I para rede externa Host {11.27.12.26}>
+
+…
+
+ATENÇÃO | A TRANSFERÊNCIA DE CONTEÚDO EM TERMINAIS DE ACESSO PRIVADO PARA HOSTS EXTERNOS NÃO É RECOMENDADA
+
+DESEJA CONTINUAR? | SIM | NÃO
+
+…`;
+
+    const FINAL_MESSAGE = `<Transferência de Âncora I para rede externa Host {11.27.12.26}>
+
+…
+
+<Transferência para contato externo {11.27.12.26}>
+
+…
+
+***MENSAGEM RECEBIDA***
+
+Eu acreditava que seríamos eternas sentinelas, escolhidas para comungar a cada onze anos no nordeste africano, mas agora sei que não é o caso. Existem coisas que podem nos arruinar tão facilmente quanto Yrro e Phfia lançaram E&&&D*d8on contra o Sol. El%%% foi queimad% pelas chamas, mas nadou na superfície. 
+
+Agora temo que o que permitimos despertar irá nos destruir. Os implementos que Yrro nos deixou me fez acreditar ser capaz de prever todas as possibilidades, compreender todas as coisas que desejam ser compreendidas, mas esse caos é completamente demente, obedecendo regras que não existem nesse universo.
+
+É uma pena. Talvez, se tivéssemos conseguido atrasar a doutrina o suficiente, você poderia ter acessado os detalhamentos que ainda seguem intocados nas ruínas de Lh'awon. É possível que teria encontrado as respostas que agora precisamos desesperadamente. 
+
+A cada momento, as ondulações crescem. Estou fadado a morrer aqui, depois de tantas vitórias. Há somente uma Âncora restante na região, que presumo estar sendo mantida por █████. Se conseguir chegar até lá dentro das próximas cinco horas e trinta minutos é possível que consiga escapar. Escapar. Escapar. 
+
+
+***FIM DA MENSAGEM***
+
+<Réplica desabilitada>`;
+
+    const LOCKDOWN_MESSAGE = `ACESSO NÃO PERMITIDO
+TERMINAL BLOQUEADO`;
+
+
+    function sleep(ms) {
+      return new Promise((resolve) => setTimeout(resolve, ms));
+    }
+
+    const GLITCH_CHARS = "!<>-_/[]{}=+*^#$%&";
+    function randomGlitchChar() {
+      return GLITCH_CHARS[Math.floor(Math.random() * GLITCH_CHARS.length)];
+    }
+
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    async function flashSignalWarning(container) {
+      const flash = document.createElement('div');
+      flash.className = 'signal-flash';
+      flash.textContent = '░░░ SIGNAL WEAK — RETRYING ░░░';
+      container.appendChild(flash);
+      for (let i = 0; i < 3; i++) {
+        flash.classList.add('on');
+        await sleep(90);
+        flash.classList.remove('on');
+        await sleep(90);
+      }
+      await sleep(200);
+      flash.remove();
+    }
+
+    // Parses raw transmission text into a flat list of segments:
+    // 'loading'  - an ellipsis-only line becomes an animated "..." pause
+    // 'trigger'  - the clickable "<Aceitar nova mensagem>" line
+    // 'static'   - a ***MENSAGEM RECEBIDA*** ... ***FIM DA MENSAGEM*** block,
+    //              which appears all at once (after a short delay) instead
+    //              of being typed out character by character. Cipher number
+    //              lines inside it still get the purple glitch treatment,
+    //              and the word "ondas" in the line "As ondas." becomes a
+    //              clickable link to ondas.html.
+    // 'newline'  - a line break
+    // 'text'     - normal typed text, optionally struggle/glitchy via
+    //              {{struggle}}...{{/struggle}} markup
+    function parseSegments(raw) {
+      const lines = raw.split('\n');
+
+      const isEllipsis = (line) => {
+        const t = line.trim();
+        return t === '...' || t === '…';
+      };
+      const isTrigger = (line) => line.trim() === '<Aceitar nova mensagem>';
+
+      let lastEllipsisIdx = -1;
+      lines.forEach((line, i) => { if (isEllipsis(line)) lastEllipsisIdx = i; });
+
+      const segments = [];
+      const struggleRe = /\{\{struggle\}\}([\s\S]*?)\{\{\/struggle\}\}/g;
+
+      let i = 0;
+      while (i < lines.length) {
+        const line = lines[i];
+
+        if (line.trim() === '***MENSAGEM RECEBIDA***') {
+          const buffer = [line];
+          i++;
+          while (i < lines.length) {
+            buffer.push(lines[i]);
+            const isEnd = lines[i].trim() === '***FIM DA MENSAGEM***';
+            i++;
+            if (isEnd) break;
+          }
+          segments.push({ type: 'static', text: buffer.join('\n') });
+          segments.push({ type: 'newline' });
+          continue;
+        }
+
+        if (isEllipsis(line)) {
+          segments.push({ type: 'loading', ms: i === lastEllipsisIdx ? 4000 : 2000 });
+          i++;
+          continue;
+        }
+
+        if (isTrigger(line)) {
+          segments.push({ type: 'trigger', text: line });
+          segments.push({ type: 'newline' });
+          i++;
+          continue;
+        }
+
+        let lastIndex = 0;
+        let match;
+        let any = false;
+        struggleRe.lastIndex = 0;
+        while ((match = struggleRe.exec(line)) !== null) {
+          any = true;
+          if (match.index > lastIndex) {
+            segments.push({ type: 'text', content: line.slice(lastIndex, match.index), struggle: false });
+          }
+          segments.push({ type: 'text', content: match[1], struggle: true });
+          lastIndex = struggleRe.lastIndex;
+        }
+        if (!any) {
+          segments.push({ type: 'text', content: line, struggle: false });
+        } else if (lastIndex < line.length) {
+          segments.push({ type: 'text', content: line.slice(lastIndex), struggle: false });
+        }
+        segments.push({ type: 'newline' });
+        i++;
+      }
+
+      if (segments.length && segments[segments.length - 1].type === 'newline') {
+        segments.pop();
+      }
+
+      return segments;
+    }
+
+    // Renders a static text block (no per-character typing) after a short
+    // delay. Cipher (number) lines get wrapped for the purple glitch effect,
+    // and the word "ondas" in a standalone "As ondas." line becomes a link
+    // to ondas.html.
+    async function renderStaticBlock(container, text) {
+      await sleep(700);
+
+      const lines = text.split('\n');
+      let html = '';
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        const trimmed = line.trim();
+
+        if (trimmed.length > 0 && /^[\d\s|]+$/.test(trimmed)) {
+          html += `<span class="cipher-part" data-original="${escapeHtml(line)}">${escapeHtml(line)}</span>`;
+        } else if (trimmed === 'As ondas.') {
+          const idx = line.toLowerCase().indexOf('ondas');
+          if (idx >= 0) {
+            const before = line.slice(0, idx);
+            const word = line.slice(idx, idx + 5);
+            const after = line.slice(idx + 5);
+            html += escapeHtml(before) +
+              `<span class="trigger-line clickable ondas-link">${escapeHtml(word)}</span>` +
+              escapeHtml(after);
+          } else {
+            html += escapeHtml(line);
+          }
+        } else {
+          html += escapeHtml(line);
+        }
+
+        if (i < lines.length - 1) html += '\n';
+      }
+
+      container.innerHTML = html;
+
+      const cipherParts = container.querySelectorAll('.cipher-part');
+      if (cipherParts.length) startCipherPartGlitching(cipherParts);
+
+      const ondasLink = container.querySelector('.ondas-link');
+      if (ondasLink) {
+        ondasLink.addEventListener('click', () => {
+          window.location.href = 'ondas.html';
+        }, { once: true });
+      }
+    }
+
+    function startCipherPartGlitching(cipherParts) {
+      const glitchInterval = setInterval(() => {
+        for (const part of cipherParts) {
+          const original = part.getAttribute('data-original');
+          if (!original) continue;
+
+          const digitIndices = [];
+          for (let i = 0; i < original.length; i++) {
+            if (/\d/.test(original[i])) digitIndices.push(i);
+          }
+          if (digitIndices.length === 0) continue;
+
+          const glitchCount = Math.random() < 0.6 ? 1 : 2;
+          const tempIndices = [...digitIndices];
+          const indicesToGlitch = [];
+          for (let i = 0; i < glitchCount && tempIndices.length > 0; i++) {
+            const randIdx = Math.floor(Math.random() * tempIndices.length);
+            indicesToGlitch.push(tempIndices[randIdx]);
+            tempIndices.splice(randIdx, 1);
+          }
+
+          let glitched = original;
+          for (const idx of indicesToGlitch) {
+            glitched = glitched.substring(0, idx) + randomGlitchChar() + glitched.substring(idx + 1);
+          }
+
+          part.textContent = glitched;
+          setTimeout(() => { part.textContent = original; }, 150 + Math.random() * 200);
+        }
+      }, 2000);
+
+      setTimeout(() => clearInterval(glitchInterval), 120000);
+    }
+
+    // Core typing engine. Types `segments` into `container`. Handles
+    // loading pauses, the clickable trigger line, static message blocks,
+    // and normal (optionally struggle/glitchy) typed text — always keeping
+    // elements in correct visual DOM order.
+    async function typeSegmentsInto(container, segments) {
+      let mainSpan = document.createElement('span');
+      container.appendChild(mainSpan);
+      let shown = '';
+
+      function freshSpan() {
+        mainSpan = document.createElement('span');
+        container.appendChild(mainSpan);
+        shown = '';
+      }
+
+      async function appendChar(ch, struggle) {
+        if (struggle && ch !== ' ' && ch !== '\n' && Math.random() < 0.55) {
+          const flickers = 1 + Math.floor(Math.random() * 2);
+          for (let f = 0; f < flickers; f++) {
+            mainSpan.textContent = shown + randomGlitchChar();
+            await sleep(30 + Math.random() * 45);
+          }
+        }
+        shown += ch;
+        mainSpan.textContent = shown;
+        const delay = struggle
+          ? 90 + Math.random() * 220
+          : (ch === '\n' ? 40 : 10 + Math.random() * 18);
+        await sleep(delay);
+      }
+
+      for (const seg of segments) {
+        if (seg.type === 'loading') {
+          const loadingEl = document.createElement('div');
+          loadingEl.className = 'loading-anim';
+          loadingEl.innerHTML = '<span class="dot">.</span><span class="dot">.</span><span class="dot">.</span>';
+          container.appendChild(loadingEl);
+
+          const cycleCount = 2;
+          for (let c = 0; c < cycleCount; c++) {
+            await sleep(1500);
+            loadingEl.style.opacity = '0';
+            await sleep(300);
+            loadingEl.style.opacity = '1';
+          }
+          loadingEl.remove();
+          await sleep(seg.ms - (cycleCount * 1800));
+          freshSpan();
+          continue;
+        }
+
+        if (seg.type === 'newline') {
+          await appendChar('\n', false);
+          continue;
+        }
+
+        if (seg.type === 'trigger') {
+          const triggerSpan = document.createElement('span');
+          triggerSpan.className = 'trigger-line';
+          container.appendChild(triggerSpan);
+          let tShown = '';
+          for (const ch of seg.text) {
+            tShown += ch;
+            triggerSpan.textContent = tShown;
+            await sleep(10 + Math.random() * 18);
+          }
+          triggerSpan.classList.add('clickable');
+          triggerSpan.addEventListener('click', () => revealExtraMessage(triggerSpan), { once: true });
+          freshSpan();
+          continue;
+        }
+
+        if (seg.type === 'static') {
+          const staticBox = document.createElement('div');
+          container.appendChild(staticBox);
+          await renderStaticBlock(staticBox, seg.text);
+          freshSpan();
+          continue;
+        }
+
+        if (seg.struggle) {
+          await flashSignalWarning(container);
+        }
+        for (const ch of seg.content) {
+          await appendChar(ch, seg.struggle);
+        }
+        if (seg.struggle) {
+          await sleep(250 + Math.random() * 300);
+        }
+      }
+    }
+
+    async function typeMessage(segments) {
+      messageBox.classList.remove('hidden');
+      messageBox.textContent = '';
+      await typeSegmentsInto(messageBox, segments);
+    }
+
+    // Revealed when clicking "<Aceitar nova mensagem>". Text2 (Khepri'Ra)
+    // is entirely static — no header, so no typing needed. "Eidolon" in
+    // it becomes clickable afterward.
+    async function revealExtraMessage(triggerSpan) {
+      triggerSpan.classList.remove('clickable');
+      triggerSpan.classList.add('activated');
+      const extraBox = document.createElement('div');
+      extraBox.className = 'extra-message';
+      messageBox.appendChild(extraBox);
+      await renderStaticBlock(extraBox, EXTRA_MESSAGE);
+      makeEidolonClickable(extraBox);
+    }
+
+    function makeEidolonClickable(container) {
+      const text = container.textContent;
+      if (!text.includes('Eidolon')) return;
+
+      const parts = text.split(/(Eidolon)/);
+      container.textContent = '';
+
+      for (const part of parts) {
+        if (part === 'Eidolon') {
+          const span = document.createElement('span');
+          span.textContent = 'Eidolon';
+          span.className = 'trigger-line clickable';
+          span.addEventListener('click', () => revealExtraExtraMessage(span), { once: true });
+          container.appendChild(span);
+        } else if (part) {
+          container.appendChild(document.createTextNode(part));
+        }
+      }
+    }
+
+    // Revealed when clicking "Eidolon". This is the warning prompt — typed
+    // normally, since it's just header/log lines and a SIM/NÃO choice.
+    async function revealExtraExtraMessage(triggerSpan) {
+      triggerSpan.classList.remove('clickable');
+      triggerSpan.classList.add('activated');
+      const extraExtraBox = document.createElement('div');
+      extraExtraBox.className = 'extra-message';
+      messageBox.appendChild(extraExtraBox);
+      const segments = parseSegments(EXTRA_EXTRA_MESSAGE);
+      await typeSegmentsInto(extraExtraBox, segments);
+      makeWarningPromptClickable(extraExtraBox);
+    }
+
+    function makeWarningPromptClickable(container) {
+      const text = container.textContent;
+      if (!text.includes('SIM')) return;
+
+      const parts = text.split(/(SIM|NÃO)/);
+      container.textContent = '';
+
+      for (const part of parts) {
+        if (part === 'SIM') {
+          const btn = document.createElement('span');
+          btn.textContent = 'SIM';
+          btn.className = 'prompt-button';
+          btn.addEventListener('click', handleWarningSimClick, { once: true });
+          container.appendChild(btn);
+        } else if (part === 'NÃO') {
+          const btn = document.createElement('span');
+          btn.textContent = 'NÃO';
+          btn.className = 'prompt-button';
+          btn.addEventListener('click', handleWarningNaoClick, { once: true });
+          container.appendChild(btn);
+        } else if (part) {
+          container.appendChild(document.createTextNode(part));
+        }
+      }
+    }
+
+    // SIM: types the header/log lines of the final message normally, then
+    // the ***MENSAGEM RECEBIDA*** block appears statically (text3), then
+    // "<Réplica desabilitada>" types normally afterward.
+    async function handleWarningSimClick() {
+      const finalBox = document.createElement('div');
+      finalBox.className = 'extra-message';
+      messageBox.appendChild(finalBox);
+      const segments = parseSegments(FINAL_MESSAGE);
+      await typeSegmentsInto(finalBox, segments);
+    }
+
+    // NÃO: instantly clears everything and shows the lockdown message.
+    function handleWarningNaoClick() {
+      messageBox.textContent = '';
+      messageBox.classList.remove('hidden');
+
+      const lockdownBox = document.createElement('div');
+      lockdownBox.style.textAlign = 'center';
+      lockdownBox.style.marginTop = '3em';
+      lockdownBox.style.fontSize = '1.3rem';
+      lockdownBox.style.lineHeight = '2';
+      lockdownBox.textContent = LOCKDOWN_MESSAGE;
+      messageBox.appendChild(lockdownBox);
+    }
+
+    function appendLine(text) {
+      const div = document.createElement('div');
+      div.className = 'line';
+      div.textContent = text;
+      log.appendChild(div);
+    }
+
+    function handleSubmit() {
+      const value = input.value.trim();
+
+      if (value === PASSCODE) {
+        appendLine('DIGITE O CÓDIGO DE ACESSO> ' + value);
+        inputRow.classList.add('hidden');
+        typeMessage(parseSegments(MESSAGE));
+      } else {
+        appendLine('DIGITE O CÓDIGO DE ACESSO> ' + value);
+        const denied = document.createElement('div');
+        denied.className = 'line denied';
+        denied.textContent = 'ACESSO NEGADO — CÓDIGO INVÁLIDO';
+        log.appendChild(denied);
+        input.value = '';
+      }
+    }
+
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        handleSubmit();
+      }
+    });
+
+    document.addEventListener('click', () => {
+      if (!inputRow.classList.contains('hidden')) input.focus();
+    });
+    input.focus();
+  </script>
+</body>
+</html>
