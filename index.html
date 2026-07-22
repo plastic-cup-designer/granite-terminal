@@ -246,8 +246,6 @@ e escapava pelas ondas.
 
 
 
-
-
 As ondas.
 
 
@@ -261,7 +259,7 @@ Terminal de Acesso Público 29-g<96.08.09.30>`;
 
     const EXTRA_MESSAGE = `Khepri’Ra, que tomamos, entre Y’loa e T’jia, todos em uma única fila. Troque Khepri’Ra com o igapó e ocupe o espaço para ser a m{{{arc\`´´arque o tempo do nosso êxodo a cada 119.086 rotações. Procure as ondulações que nos formaram, um quarto do caminho até o sol, ao redor do igapó. Quando um for todos, Eidolon despertará.`;
 
-    const EXTRA_EXTRA_MESSAGE = `F.G.A.L.G - Âncora I
+    const EXTRA_EXTRA_MESSAGE = `G.A.P.T - Âncora I
 Terminal de Acesso Privado 01-g<11.11.11.01>
 
 …
@@ -699,12 +697,17 @@ TERMINAL BLOQUEADO`;
       log.appendChild(div);
     }
 
-    function handleSubmit() {
+    async function handleSubmit() {
       const value = input.value.trim();
 
       if (value === PASSCODE) {
         appendLine('DIGITE O CÓDIGO DE ACESSO> ' + value);
         inputRow.classList.add('hidden');
+        appendLine('');
+        appendLine('');
+        appendLine('');
+        appendLine('ACESSO CONCEDIDO');
+        await sleep(1500);
         typeMessage(parseSegments(MESSAGE));
       } else {
         appendLine('DIGITE O CÓDIGO DE ACESSO> ' + value);
